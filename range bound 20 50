@@ -1,1 +1,41 @@
 
+//@version=4
+strategy("EMA Crossover Strategy", shorttitle="EMA Crossover", overlay=true)
+
+// Input for EMA lengths
+emaShortLength = input(20, title="Short EMA Length")
+emaLongLength = input(50, title="Long EMA Length")
+
+// Input for range-bound condition
+rangeBoundThreshold = input(0.01, title="Range Bound Threshold", type=input.float)
+
+// Calculate EMAs
+emaShort = ema(close, emaShortLength)
+emaLong = ema(close, emaLongLength)
+
+// Plot EMAs on the chart
+plot(emaShort, title="20 EMA", color=color.blue)
+plot(emaLong, title="50 EMA", color=color.red)
+
+// Buy and Sell conditions
+buyCondition = crossover(emaShort, emaLong)
+sellCondition = crossunder(emaShort, emaLong)
+
+// VWAP
+vwap = vwma(close, emaLongLength) // You can adjust the length if needed
+
+// Range-bound condition
+rangeBound = abs(emaShort - emaLong) < rangeBoundThreshold
+
+// Strategy entry and exit conditions
+strategy.entry("Buy", strategy.long, when = buyCondition and not rangeBound)
+strategy.close("Buy", when = sellCondition or close < vwap) // Exit long if sellCondition or close is below VWAP
+strategy.entry("Sell", strategy.short, when = sellCondition and not rangeBound)
+strategy.close("Sell", when = buyCondition or close > vwap) // Exit short if buyCondition or close is above VWAP
+
+// Plot Buy and Sell signals on the chart
+plotshape(series=buyCondition and not rangeBound, title="Buy Signal", location=location.belowbar, color=color.green, style=shape.triangleup, size=size.small)
+plotshape(series=sellCondition and not rangeBound, title="Sell Signal", location=location.abovebar, color=color.red, style=shape.triangledown, size=size.small)
+
+// Plot VWAP on the chart
+plot(vwap, title="VWAP", color=color.orange)
